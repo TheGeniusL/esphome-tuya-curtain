@@ -1,3 +1,5 @@
+Big thanks to Iphong for orignal code. Just made a few adjustments for the code to work with my zemismart curtains.
+
 # ESPHome firmware for Tuya Curtain
 
 So i got my hands on one of these Tuya Curtain. But the Home Assistant integration was terrible. So i decided to write my own custom firmware that talk to the Tuya MCU, and here is what i've goot so far.
