@@ -1,4 +1,4 @@
-Big thanks to Iphong for orignal code. Just made a few adjustments for the code to work with my zemismart curtains.
+Big thanks to Iphong for the orignal code. Just made a few adjustments for the code to work with my zemismart curtains.
 
 # ESPHome firmware for Tuya Curtain
 
