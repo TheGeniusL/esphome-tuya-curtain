@@ -1,12 +1,12 @@
 #include "esphome.h"
 
 // basic commands
-#define TUYA_CLOSE   "55aa000600056504000100"
-#define TUYA_STOP    "55aa000600056504000101"
-#define TUYA_OPEN    "55aa000600056504000102"
+#define TUYA_CLOSE   "55aa000600056604000100"
+#define TUYA_STOP    "55aa000600056604000102"
+#define TUYA_OPEN    "55aa000600056604000101"
 
 // set position percentage
-#define TUYA_SET_POSITION  "55aa0006000868020004000000" // and 1 byte (0x00-0x64)
+#define TUYA_SET_POSITION  "55aa0006000865020004000000" // and 1 byte (0x00-0x64)
 
 // enable/disable reversed motor direction
 #define TUYA_DISABLE_REVERSING  "55aa000600056700000100"
@@ -38,19 +38,29 @@ public:
 			crc = 0;
 			writeHex(TUYA_STOP);
 			writeByte(crc);
+			current_operation = COVER_OPERATION_IDLE;
 		}
-		if (call.get_position().has_value()) {
+		else if (call.get_position().has_value()) {
 			crc = 0;
 			uint8_t pos = *call.get_position() * 100.0f;
-			if (pos == 100) {
+			if (pos == 0) {
 				writeHex(TUYA_OPEN);
-			} else if (pos == 0) {
+				current_operation = COVER_OPERATION_OPENING;
+			} else if (pos == 100) {
 				writeHex(TUYA_CLOSE);
+				current_operation = COVER_OPERATION_CLOSING;
 			} else {
 				writeHex(TUYA_SET_POSITION);
 				writeByte(pos);
+				if (position > pos) {
+					current_operation = COVER_OPERATION_OPENING;
+				}
+				else if (pos > position) {
+					current_operation = COVER_OPERATION_CLOSING;
+				}
 			}
 			writeByte(crc);
+			position = *call.get_position();
 		}
 	}
 
@@ -76,15 +86,15 @@ public:
 										break;
 									}
 									// Operation mode state
-									case 0x65: {
+									case 0x66: {
 										switch (buffer[10]) {
-											case 0x00:
+											case 0x01:
 												current_operation = COVER_OPERATION_CLOSING;
 												break;
-											case 0x01:
+											case 0x02:
 												current_operation = COVER_OPERATION_IDLE;
 												break;
-											case 0x02:
+											case 0x00:
 												current_operation = COVER_OPERATION_OPENING;
 												break;
 										}
@@ -92,9 +102,11 @@ public:
 									}
 									// Position report during operation
 									// Max value is 0x64 so the last byte is good enough
-									case 0x66: {
-										position = buffer[13] / 100.0f;
-										id(cover_open) = !!position;
+									case 0x65: {
+										if (current_operation == COVER_OPERATION_IDLE) {
+											position = buffer[13] / 100.0f;
+											id(cover_open) = !!position;
+										}
 										break;
 									}
 									// Position report after operation
